@@ -1,0 +1,414 @@
+#include"function.h"
+#include<iostream>
+using namespace std;
+
+
+template<class T>
+BaseQueue<T>::BaseQueue():_capacity{1},_queue{new T[1]},_front{-1},_rear{-1}{}
+
+    // Destructor
+template<class T>
+BaseQueue<T>::~BaseQueue()
+{
+    delete []_queue;
+}
+
+    // Check if the stack is empty
+template<class T>
+bool BaseQueue<T>:: empty()
+{
+    return _front == _rear;
+}
+
+    // Return the size of the queue
+template<class T>
+int BaseQueue<T>:: size()
+{
+    if(_front>_rear)
+    {
+        return _rear-_front+_capacity;
+    }
+    else 
+    {
+        return _rear-_front;
+    }
+}
+
+    // Return the front element
+template<class T>
+T& BaseQueue<T>:: front(){return _queue[(_front+1)%_capacity];}
+
+    // Insert a new element at rear
+template<class T>
+void BaseQueue<T>:: push(const T& item)
+{
+    //cout<<"push "<<item<<endl;
+    if((*this).size()==_capacity-1)
+    {
+        int origin_capacity = _capacity;
+        _capacity*=2;
+        int* tmp = new int[_capacity];
+        int left,right;
+        if(_front<_rear)
+        {
+            left = _front;
+            right = _rear;
+        }
+        else
+        {
+            left = _front;
+            right = _front+this->size();
+        }
+        for(int i=left;i<right;i++)
+        {
+            tmp[i-_front]=_queue[(i+1)%(origin_capacity)];
+        }
+        delete []_queue;
+        _queue = tmp;
+        _rear = this->size()-1;
+        _front = -1;
+    }
+    
+    _rear=(_rear+1)%_capacity;
+    _queue[_rear]=item;
+    //cout<<"front="<<_front<<" rear="<<_rear<<endl;
+}
+
+    // Delete one element from front
+template<class T>
+void BaseQueue<T>:: pop()
+{
+    //cout<<"pop "<<_queue[(_front+1)%_capacity]<<endl;
+    if((*this).size()<_capacity/2 && (*this).size()>1)
+    {
+        int origin_capacity  = _capacity;
+        _capacity/=2;
+        int* tmp = new int[_capacity];
+        int left,right;
+        if(_front<_rear)
+        {
+            left = _front;
+            right = _rear;
+        }
+        else
+        {
+            left = _front;
+            right = _front+this->size();
+        }
+        for(int i=left;i<right;i++)
+        {
+            tmp[i-_front]=_queue[(i+1)%(origin_capacity)];
+        }
+        _rear = this->size()-1;
+        _front = -1;
+        delete []_queue;
+        _queue = tmp;
+    }
+    _front=(_front+1)%_capacity;
+    if(_front==_rear)
+    {
+        _front = -1; 
+        _rear = -1;
+    }
+    //cout<<"front="<<_front<<" rear="<<_rear<<endl;
+}
+void tmpqq()
+{
+    BaseQueue<int>tmp;
+    tmp.empty();
+    tmp.size();
+    tmp.front();
+    tmp.pop();
+    tmp.push(1);
+    
+}
+template<class T>
+BaseStack<T>::BaseStack():_capacity{1},_top{-1},_stack{new T[1]}{}
+template<class T>
+BaseStack<T>::~BaseStack()
+{
+    delete []_stack;
+}
+template<class T>
+bool BaseStack<T>::empty()
+{
+    return _top==-1;
+}
+template<class T>
+int BaseStack<T>::size()
+{
+    return _top+1;
+}
+template<class T>
+T& BaseStack<T>::top()
+{
+    return _stack[_top];
+}
+template<class T>
+void BaseStack<T>::push(const T& item)
+{
+    if(_top==_capacity-1)
+    {
+        _capacity*=2;
+        int* tmp = new int[_capacity];
+        for(int i=0;i<=_top;i++)
+        {
+            tmp[i]=_stack[i];
+        }
+        delete []_stack;
+        _stack = tmp;
+    }
+    _top+=1;
+    _stack[_top]=item;
+}
+template<class T>
+void BaseStack<T>::pop()
+{
+    if(this->size()<_capacity/2 && _capacity>1)
+    {
+        _capacity/=2;
+        int* tmp = new int[_capacity];
+        for(int i=0;i<=_top;i++)
+        {
+            tmp[i]=_stack[i];
+        }
+        delete []_stack;
+        _stack = tmp;
+    }   
+    _top-=1;
+}
+void tmpStack()
+{
+    BaseStack<int> tmp;
+    tmp.empty();
+    tmp.push(1);
+    tmp.top();
+    tmp.pop();
+    tmp.size();
+}
+//BaseStack<int>grid[10];
+BaseStack<int>*grid;
+int current_max_level(int W)
+{
+    int max=0;
+    for(int i=0;i<W;i++)
+    {
+        if(max < grid[i].size())
+        {
+            max = grid[i].size();
+        }
+    }
+    return max;
+}
+
+void InitialzeStage(int W, int H)
+{
+    static BaseStack<int>*tmp = new BaseStack<int>[W];
+    grid = tmp;
+    while(H--)                           //construct the initial grid
+    {
+        for(int j=0;j<W;j++)
+        {
+            char tmp;
+            cin>>tmp;
+            if(tmp=='_')grid[j].push(-1);
+            else grid[j].push(tmp-'0');
+        }
+    }
+    for(int i=0;i<W;i++)                              //clean up the empty space
+    {
+        while(!grid[i].empty())
+        {
+            if(grid[i].top()==-1)
+            {
+                grid[i].pop();
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+    return;
+}
+BaseQueue<int>special_bullets;
+// Function for shooting a normal bullet
+void ShootNormal(int col, int W)
+{
+    if(col>W-1||col<0)return;
+    if(grid[col].empty())return;                     //clasify the enemy we shoot
+    int enemy_type;
+    if(grid[col].top()!=1 && grid[col].top()!=5)
+    {
+        special_bullets.push(grid[col].top());  //collect special bullet generated by special enemy
+    }
+    enemy_type = grid[col].top();
+    grid[col].pop();
+    while(!grid[col].empty())           //In case there are empty space in the middle
+    {
+        if(grid[col].top()==-1)
+        {
+            grid[col].pop();
+        }
+        else
+        {
+            break;
+        }
+    }
+
+    if(enemy_type==5)                  //handle type #5 enemy action 
+    {
+        //cout<<"hit #5!"<<endl;
+        int left,right;                     //check the range for generating additional enemy
+        col-2 > 0 ? left = col-2 : left = 0;
+        col+2 > W-1 ? right = W-1 : right = col+2;
+        int max_level=0;
+        for(int i=left;i<=right;i++)        //find max level in the five columns
+        {
+            if(max_level < grid[i].size())
+            {
+                max_level = grid[i].size();
+            }
+        }
+        for(int i=left;i<=right;i++)           // fill in empty space
+        {
+            while(grid[i].size()<max_level)
+            {
+                grid[i].push(-1);
+            }
+            int times=3;
+            while(times--)
+            {
+                grid[i].push(1);
+            }
+        }
+
+    }
+    return;
+}
+
+// Function for shooting a special bullet
+void ShootSpecial(int col, int W)
+{
+    if(col>W-1||col<0)return;
+    if(special_bullets.empty())return;
+    if(special_bullets.front()==2)
+    {
+        int left,right;                     //check the range for shotgun bullet
+        col-2 > 0 ? left=col-2:left=0;
+        col+2 > W-1 ? right=W-1:right=col+2;
+        for(int i=left;i<=right;i++)        //shoot five bullets from left to right
+        {
+            ShootNormal(i,W);
+        }
+        special_bullets.pop();
+    }
+    else if(special_bullets.front()==3)     //shoot three bullets in a row
+    {
+        int times=3;
+        while(times--)
+        {
+            ShootNormal(col,W);
+        }
+        special_bullets.pop();
+    }
+    else if(special_bullets.front()==4)     //if there are consecutive enemies on top then shoot all of them
+    {
+        if(!grid[col].empty())
+        {
+            int origin_enemy_type = grid[col].top();
+            while(!grid[col].empty())
+            {
+                if(grid[col].top()==origin_enemy_type)
+                {
+                    ShootNormal(col,W);
+                }
+                else
+                {
+                    break;
+                }
+            }
+        }
+        special_bullets.pop();
+    }
+    return;
+}
+
+// Function that show the front row of the current stage
+// Here, as the description on the OJ, you need to find the maximum level that contains any enemy.
+// print the enemy types at that level for each column.
+// print a underline "_" for a column that does not have a enemy at that level.
+void FrontRow(int W)
+{
+    int level=current_max_level(W); //find the highest level
+    cout<< "FRONT_ROW, LEVEL:"<<level<<endl;
+    if(level==0)return; 
+    for(int i=0;i<W;i++)            //output the highest level
+    {
+        if(grid[i].size()<level)
+        {
+            cout<<"_";
+            if(i!=W-1)cout<<" ";
+        }
+        else
+        {
+            if(!grid[i].empty())cout<<grid[i].top();
+            else cout<<"_";
+            if(i!=W-1)cout<<" ";
+        }
+    }
+    cout<<endl;
+    return;
+}
+
+// Print the end result of the stage.
+void ShowResult(int W)
+{
+    cout<<"END_RESULT:"<<endl;
+    int max_level=current_max_level(W); //find max level
+    BaseStack<int>result[W];
+    for(int j=0;j<W;j++)                //pop out the stack and out put in reverse order 
+    {
+        while(!grid[j].empty())
+        {
+            result[j].push(grid[j].top());
+            grid[j].pop();
+        }
+    }
+    while(max_level--)
+    {
+        for(int i=0;i<W;i++)        
+        {
+            if(result[i].empty())
+            {
+                cout<<"_";
+                if(i!=W-1)cout<<" ";
+            }
+            else
+            {
+                if(result[i].top()==-1)
+                {
+                    cout<<"_";
+                    if(i!=W-1)cout<<" ";
+                    result[i].pop();
+                }
+                else
+                {
+                    cout<<result[i].top();
+                    if(i!=W-1)cout<<" ";
+                    result[i].pop();
+                }
+            }
+        }
+        cout<<endl;
+    }
+    return;
+}
+// free the memory that allocated in the program.
+ 
+void deleteStage()
+{
+    //delete []grid;
+    return;
+}
+
